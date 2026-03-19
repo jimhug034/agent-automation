@@ -97,7 +97,12 @@ pub fn find_electron_executable(dir: &Path) -> Option<PathBuf> {
                         if let Ok(mac_entries) = std::fs::read_dir(&contents_path) {
                             for mac_entry in mac_entries.flatten() {
                                 let exe_path = mac_entry.path();
-                                if exe_path.file_name().and_then(|s| s.to_str()).map(|s| !s.starts_with('.')) == Some(true) {
+                                if exe_path
+                                    .file_name()
+                                    .and_then(|s| s.to_str())
+                                    .map(|s| !s.starts_with('.'))
+                                    == Some(true)
+                                {
                                     tracing::info!("找到 Electron 可执行文件: {:?}", exe_path);
                                     return Some(exe_path);
                                 }
@@ -113,7 +118,12 @@ pub fn find_electron_executable(dir: &Path) -> Option<PathBuf> {
             if let Ok(entries) = std::fs::read_dir(dir) {
                 for entry in entries.flatten() {
                     let exe_path = entry.path();
-                    if exe_path.file_name().and_then(|s| s.to_str()).map(|s| !s.starts_with('.')) == Some(true) {
+                    if exe_path
+                        .file_name()
+                        .and_then(|s| s.to_str())
+                        .map(|s| !s.starts_with('.'))
+                        == Some(true)
+                    {
                         tracing::info!("找到 Electron 可执行文件: {:?}", exe_path);
                         return Some(exe_path);
                     }
@@ -122,12 +132,7 @@ pub fn find_electron_executable(dir: &Path) -> Option<PathBuf> {
         }
     } else {
         // Linux: 查找无扩展名的可执行文件
-        let exe_names = [
-            "electron",
-            "app",
-            "agent-desktop",
-            "claude-desktop",
-        ];
+        let exe_names = ["electron", "app", "agent-desktop", "claude-desktop"];
 
         for name in &exe_names {
             let exe_path = dir.join(name);
@@ -154,10 +159,7 @@ pub fn find_electron_executable(dir: &Path) -> Option<PathBuf> {
 /// # 注意
 /// 此函数会以 `--remote-debugging-port` 参数启动 Electron，
 /// 允许后续通过 CDP 协议控制应用
-pub async fn launch_electron(
-    app_dir: &Path,
-    cdp_port: u16,
-) -> Result<ElectronProcess, AppError> {
+pub async fn launch_electron(app_dir: &Path, cdp_port: u16) -> Result<ElectronProcess, AppError> {
     tracing::info!("启动 Electron 应用: {:?}", app_dir);
 
     // 查找可执行文件
@@ -178,10 +180,8 @@ pub async fn launch_electron(
     cmd.arg("--no-default-browser-check");
 
     // macOS .app 包需要特殊处理
-    if cfg!(target_os = "macos") {
-        if exe_path.to_string_lossy().contains(".app/Contents/MacOS/") {
-            // 已经是完整路径，不需要 open 命令
-        }
+    if cfg!(target_os = "macos") && exe_path.to_string_lossy().contains(".app/Contents/MacOS/") {
+        // 已经是完整路径，不需要 open 命令
     }
 
     // Windows 和 Linux 直接启动
@@ -195,9 +195,7 @@ pub async fn launch_electron(
     let pid = match child.id() {
         Some(id) => id,
         None => {
-            return Err(AppError::LaunchFailed(
-                "无法获取进程 ID".to_string()
-            ));
+            return Err(AppError::LaunchFailed("无法获取进程 ID".to_string()));
         }
     };
 

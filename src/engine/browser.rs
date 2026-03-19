@@ -180,13 +180,7 @@ impl AgentBrowser {
         debug!("捕获截图");
 
         let port_str = self.cdp_port.to_string();
-        let mut args = vec![
-            "--port",
-            &port_str,
-            "screenshot",
-            "--format",
-            "base64",
-        ];
+        let mut args = vec!["--port", &port_str, "screenshot", "--format", "base64"];
 
         if let Some(path) = output_path {
             args.extend_from_slice(&["--output", path]);

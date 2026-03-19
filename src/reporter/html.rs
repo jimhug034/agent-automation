@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::models::{TestReport, TestStep, StepStatus};
+use crate::models::{StepStatus, TestReport, TestStep};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -30,7 +30,10 @@ pub fn generate_html_report(
     context.insert("package_url".to_string(), report.package_url.clone());
     context.insert(
         "start_time".to_string(),
-        report.start_time.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
+        report
+            .start_time
+            .format("%Y-%m-%d %H:%M:%S UTC")
+            .to_string(),
     );
     context.insert(
         "end_time".to_string(),
@@ -99,10 +102,10 @@ fn generate_steps_html(steps: &[TestStep]) -> String {
 
         let status_icon = match step.status {
             StepStatus::Passed => "&#10004;", // Checkmark
-            StepStatus::Failed => "&#10008;",  // X mark
-            StepStatus::Skipped => "#8628;",   // Right arrow
-            StepStatus::Running => "&#9881;",  // Gear
-            StepStatus::Pending => "&#9744;",  // Checkbox
+            StepStatus::Failed => "&#10008;", // X mark
+            StepStatus::Skipped => "#8628;",  // Right arrow
+            StepStatus::Running => "&#9881;", // Gear
+            StepStatus::Pending => "&#9744;", // Checkbox
         };
 
         let hardware_badge = if step.is_hardware_related {

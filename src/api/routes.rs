@@ -2,9 +2,12 @@
 //!
 //! 使用 Axum 定义 API 路由和中间件
 
-use crate::api::handlers::{AppState, delete_task, get_report_html, get_report_json, get_task_status, health_check, submit_test_task};
+use crate::api::handlers::{
+    delete_task, get_report_html, get_report_json, get_task_status, health_check, submit_test_task,
+    AppState,
+};
 use axum::{
-    routing::{get, post, delete},
+    routing::{delete, get, post},
     Router,
 };
 use std::sync::atomic::AtomicUsize;

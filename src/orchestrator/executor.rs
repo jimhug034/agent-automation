@@ -6,7 +6,7 @@ use crate::error::AppError;
 use crate::installer::download::download_package;
 use crate::installer::extract::extract_zip;
 use crate::installer::launch::{find_electron_executable, kill_process, launch_electron};
-use crate::models::{TestReport, TestStep, TaskStatus};
+use crate::models::{TaskStatus, TestReport, TestStep};
 use crate::orchestrator::store::TaskStore;
 use crate::reporter::feishu::{send_feishu_notification, TestSummary};
 use crate::reporter::html::generate_html_report;
@@ -86,7 +86,8 @@ impl TaskExecutor {
 
         // 2. 下载 ZIP
         info!("下载包: {}", package_url);
-        self.update_task_status(task_id, TaskStatus::Downloading).await;
+        self.update_task_status(task_id, TaskStatus::Downloading)
+            .await;
         if let Err(e) = download_package(&package_url, &zip_path).await {
             error!("下载失败: {}", e);
             return self.fail_task(task_id, format!("下载失败: {}", e)).await;
@@ -95,7 +96,8 @@ impl TaskExecutor {
 
         // 3. 解压 ZIP
         info!("解压包到: {:?}", package_dir);
-        self.update_task_status(task_id, TaskStatus::Extracting).await;
+        self.update_task_status(task_id, TaskStatus::Extracting)
+            .await;
         if let Err(e) = extract_zip(&zip_path, &package_dir).await {
             error!("解压失败: {}", e);
             return self.fail_task(task_id, format!("解压失败: {}", e)).await;
@@ -105,10 +107,7 @@ impl TaskExecutor {
         // 4. 查找 Electron 可执行文件
         info!("查找 Electron 可执行文件");
         let electron_path = find_electron_executable(&package_dir).ok_or_else(|| {
-            AppError::LaunchFailed(format!(
-                "未找到 Electron 可执行文件: {:?}",
-                package_dir
-            ))
+            AppError::LaunchFailed(format!("未找到 Electron 可执行文件: {:?}", package_dir))
         })?;
         debug!("找到 Electron: {:?}", electron_path);
 
@@ -120,7 +119,9 @@ impl TaskExecutor {
             Ok(process) => process,
             Err(e) => {
                 error!("启动 Electron 失败: {}", e);
-                return self.fail_task(task_id, format!("启动应用失败: {}", e)).await;
+                return self
+                    .fail_task(task_id, format!("启动应用失败: {}", e))
+                    .await;
             }
         };
 
@@ -198,7 +199,8 @@ impl TaskExecutor {
         }
 
         // 10. 更新状态为 Completed
-        self.update_task_status(task_id, TaskStatus::Completed).await;
+        self.update_task_status(task_id, TaskStatus::Completed)
+            .await;
         info!("任务执行完成: {}", task_id);
 
         Ok(())
@@ -314,11 +316,7 @@ mod tests {
         std::fs::create_dir_all(&reports_dir).unwrap();
 
         // 创建空的 HTML 模板
-        std::fs::write(
-            &html_template,
-            "<html><body>{{task_id}}</body></html>",
-        )
-        .unwrap();
+        std::fs::write(&html_template, "<html><body>{{task_id}}</body></html>").unwrap();
 
         let tasks = create_test_store();
         let executor = TaskExecutor::new(
@@ -336,10 +334,8 @@ mod tests {
     async fn test_create_placeholder_steps() {
         let (executor, _temp) = create_test_executor();
 
-        let steps = executor.create_placeholder_steps(&vec![
-            "Test login".to_string(),
-            "Test logout".to_string(),
-        ]);
+        let steps = executor
+            .create_placeholder_steps(&vec!["Test login".to_string(), "Test logout".to_string()]);
 
         // 应该有 3 个步骤：launch + 2 个测试目标
         assert_eq!(steps.len(), 3);

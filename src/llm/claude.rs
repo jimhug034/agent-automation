@@ -136,10 +136,7 @@ impl ClaudeClient {
     }
 
     /// 执行单次聊天 API 请求
-    async fn do_chat_request(
-        &self,
-        messages: &[ChatMessage],
-    ) -> Result<String, AppError> {
+    async fn do_chat_request(&self, messages: &[ChatMessage]) -> Result<String, AppError> {
         let (system, claude_messages) = self.convert_messages(messages);
 
         if claude_messages.is_empty() {
@@ -171,7 +168,7 @@ impl ClaudeClient {
 
         let response = self
             .client
-            .post(&self.messages_url())
+            .post(self.messages_url())
             .header("x-api-key", &self.api_key)
             .header("anthropic-version", "2023-06-01")
             .header("Content-Type", "application/json")
@@ -197,11 +194,10 @@ impl ClaudeClient {
             )));
         }
 
-        let message_response: MessageResponse =
-            serde_json::from_str(&body).map_err(|e| {
-                error!("解析 Claude API 响应失败: {}, body: {}", e, body);
-                AppError::LlmApiError(format!("解析响应失败: {}", e))
-            })?;
+        let message_response: MessageResponse = serde_json::from_str(&body).map_err(|e| {
+            error!("解析 Claude API 响应失败: {}, body: {}", e, body);
+            AppError::LlmApiError(format!("解析响应失败: {}", e))
+        })?;
 
         let content = message_response
             .content

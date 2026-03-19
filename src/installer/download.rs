@@ -13,10 +13,7 @@ use tokio::io::AsyncWriteExt;
 ///
 /// # 返回
 /// 成功时返回 `Ok(())`，失败时返回相应的错误
-pub async fn download_package(
-    url: &str,
-    destination: &Path,
-) -> Result<(), AppError> {
+pub async fn download_package(url: &str, destination: &Path) -> Result<(), AppError> {
     tracing::info!("开始下载包: {} -> {:?}", url, destination);
 
     // 创建父目录
@@ -37,7 +34,10 @@ pub async fn download_package(
     // 检查响应状态
     if !response.status().is_success() {
         let status = response.status();
-        let error_text = response.text().await.unwrap_or_else(|_| "无法读取错误响应".to_string());
+        let error_text = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "无法读取错误响应".to_string());
         tracing::error!("下载失败: {} - {}", status, error_text);
         return Err(AppError::DownloadFailed(format!(
             "HTTP {}: {}",
@@ -99,11 +99,7 @@ mod tests {
         let destination = temp_file.path();
 
         // 使用一个小文件进行测试
-        let result = download_package(
-            "https://httpbin.org/bytes/1024",
-            destination,
-        )
-        .await;
+        let result = download_package("https://httpbin.org/bytes/1024", destination).await;
 
         assert!(result.is_ok());
         assert!(destination.exists());

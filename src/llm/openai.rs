@@ -103,10 +103,7 @@ impl OpenAiClient {
     }
 
     /// 执行单次聊天 API 请求
-    async fn do_chat_request(
-        &self,
-        messages: &[ChatMessage],
-    ) -> Result<String, AppError> {
+    async fn do_chat_request(&self, messages: &[ChatMessage]) -> Result<String, AppError> {
         let request = ChatCompletionRequest {
             model: self.model.clone(),
             messages: messages.to_vec(),
@@ -119,7 +116,7 @@ impl OpenAiClient {
 
         let response = self
             .client
-            .post(&self.chat_url())
+            .post(self.chat_url())
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
             .json(&request)
@@ -137,21 +134,17 @@ impl OpenAiClient {
         })?;
 
         if !status.is_success() {
-            error!(
-                "OpenAI API 返回错误: status={}, body={}",
-                status, body
-            );
+            error!("OpenAI API 返回错误: status={}, body={}", status, body);
             return Err(AppError::LlmApiError(format!(
                 "API 返回错误: status={}, body={}",
                 status, body
             )));
         }
 
-        let chat_response: ChatCompletionResponse =
-            serde_json::from_str(&body).map_err(|e| {
-                error!("解析 OpenAI API 响应失败: {}, body: {}", e, body);
-                AppError::LlmApiError(format!("解析响应失败: {}", e))
-            })?;
+        let chat_response: ChatCompletionResponse = serde_json::from_str(&body).map_err(|e| {
+            error!("解析 OpenAI API 响应失败: {}, body: {}", e, body);
+            AppError::LlmApiError(format!("解析响应失败: {}", e))
+        })?;
 
         let content = chat_response
             .choices

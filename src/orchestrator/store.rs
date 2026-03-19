@@ -2,7 +2,7 @@
 //!
 //! 提供任务的内存存储和管理功能
 
-use crate::models::{TestTask, TaskStatus};
+use crate::models::{TaskStatus, TestTask};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;

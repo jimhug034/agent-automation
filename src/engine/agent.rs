@@ -92,12 +92,7 @@ impl TestAgent {
                     Some(json_str) => serde_json::from_str(&json_str).map_err(|e2| {
                         AppError::LlmApiError(format!("解析测试计划失败: {} (原始: {})", e2, e))
                     })?,
-                    None => {
-                        return Err(AppError::LlmApiError(format!(
-                            "解析测试计划失败: {}",
-                            e
-                        )))
-                    }
+                    None => return Err(AppError::LlmApiError(format!("解析测试计划失败: {}", e))),
                 }
             }
         };
@@ -115,10 +110,7 @@ impl TestAgent {
     /// # Returns
     ///
     /// 返回执行结果和可能的错误信息
-    pub async fn execute_step(
-        &mut self,
-        action: &TestAction,
-    ) -> Result<ExecutionResult, AppError> {
+    pub async fn execute_step(&mut self, action: &TestAction) -> Result<ExecutionResult, AppError> {
         debug!("执行动作: {:?}", action);
 
         let result = match action {
@@ -254,10 +246,7 @@ impl TestAgent {
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
 
-        info!(
-            "测试目标执行完成, 共执行 {} 个步骤",
-            steps.len()
-        );
+        info!("测试目标执行完成, 共执行 {} 个步骤", steps.len());
         Ok(steps)
     }
 
@@ -298,9 +287,7 @@ impl TestAgent {
             AppError::LlmApiError(format!("评估断言失败: {}", e))
         })?;
 
-        let result = response
-            .to_lowercase()
-            .contains("true")
+        let result = response.to_lowercase().contains("true")
             || response.contains("成立")
             || response.contains("通过");
 
@@ -529,7 +516,10 @@ mod tests {
 
         #[async_trait]
         impl LlmClient for MockLlmClient {
-            async fn chat(&self, _messages: Vec<ChatMessage>) -> Result<String, Box<dyn std::error::Error>> {
+            async fn chat(
+                &self,
+                _messages: Vec<ChatMessage>,
+            ) -> Result<String, Box<dyn std::error::Error>> {
                 Ok("{}".to_string())
             }
         }

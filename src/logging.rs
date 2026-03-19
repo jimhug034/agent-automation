@@ -32,7 +32,7 @@ pub fn init_logging(settings: &Settings) -> Result<(), Box<dyn std::error::Error
             fmt::layer()
                 .with_writer(file_appender.and(console_non_blocking))
                 .with_target(true)
-                .with_thread_ids(true)
+                .with_thread_ids(true),
         )
         .init();
 

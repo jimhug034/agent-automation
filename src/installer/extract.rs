@@ -11,10 +11,7 @@ use zip::ZipArchive;
 ///
 /// # 返回
 /// 成功时返回 `Ok(())`，失败时返回相应的错误
-pub async fn extract_zip(
-    zip_path: &Path,
-    destination: &Path,
-) -> Result<(), AppError> {
+pub async fn extract_zip(zip_path: &Path, destination: &Path) -> Result<(), AppError> {
     tracing::info!("开始解压: {:?} -> {:?}", zip_path, destination);
 
     // 检查 ZIP 文件是否存在
@@ -77,10 +74,7 @@ pub async fn extract_zip(
 ///
 /// # 返回
 /// 成功时返回 `Ok(())`，失败时返回相应的错误
-pub fn extract_zip_sync(
-    zip_path: &Path,
-    destination: &Path,
-) -> Result<(), AppError> {
+pub fn extract_zip_sync(zip_path: &Path, destination: &Path) -> Result<(), AppError> {
     tracing::info!("开始解压 (同步): {:?} -> {:?}", zip_path, destination);
 
     // 检查 ZIP 文件是否存在
@@ -131,15 +125,14 @@ pub fn extract_zip_sync(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
     use tempfile::TempDir;
     use zip::write::FileOptions;
-    use std::io::Write;
 
     fn create_test_zip(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         let file = std::fs::File::create(path)?;
         let mut zip = zip::ZipWriter::new(file);
-        let options = FileOptions::default()
-            .compression_method(zip::CompressionMethod::Deflated);
+        let options = FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
         // 添加一些测试文件
         zip.start_file("test.txt", options)?;
@@ -170,7 +163,9 @@ mod tests {
         assert!(extract_dir.join("subdir/nested.txt").exists());
 
         // 验证内容
-        let content = fs::read_to_string(extract_dir.join("test.txt")).await.unwrap();
+        let content = fs::read_to_string(extract_dir.join("test.txt"))
+            .await
+            .unwrap();
         assert_eq!(content, "Hello, World!");
     }
 

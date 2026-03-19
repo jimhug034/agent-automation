@@ -84,7 +84,12 @@ struct FeishuMessage {
 
 impl FeishuMessage {
     /// 从测试报告创建飞书消息
-    fn from_test_report(task_id: &str, summary: &TestSummary, duration_secs: u64, report_url: Option<&str>) -> Self {
+    fn from_test_report(
+        task_id: &str,
+        summary: &TestSummary,
+        duration_secs: u64,
+        report_url: Option<&str>,
+    ) -> Self {
         let title = format!("🤖 自动化测试报告 - {}", task_id);
 
         let mut content = Vec::new();
@@ -94,12 +99,14 @@ impl FeishuMessage {
         content.push(vec![FeishuTextElement::newline()]);
 
         // 统计信息
-        content.push(vec![
-            FeishuTextElement::text(format!("总计: {} | ", summary.total)),
-        ]);
-        content.push(vec![
-            FeishuTextElement::text(format!("通过: {} | ", summary.passed)),
-        ]);
+        content.push(vec![FeishuTextElement::text(format!(
+            "总计: {} | ",
+            summary.total
+        ))]);
+        content.push(vec![FeishuTextElement::text(format!(
+            "通过: {} | ",
+            summary.passed
+        ))]);
         content.push(vec![
             FeishuTextElement::text(format!("失败: {}", summary.failed)),
             FeishuTextElement::newline(),
@@ -127,10 +134,7 @@ impl FeishuMessage {
         }
 
         let post = FeishuPost {
-            zh_cn: FeishuPostContent {
-                title,
-                content,
-            },
+            zh_cn: FeishuPostContent { title, content },
         };
 
         Self {
@@ -206,10 +210,7 @@ pub async fn send_feishu_notification(
         .unwrap_or_else(|_| "无法读取响应体".to_string());
 
     if !status.is_success() {
-        error!(
-            "飞书推送失败，状态码: {}, 响应: {}",
-            status, response_body
-        );
+        error!("飞书推送失败，状态码: {}, 响应: {}", status, response_body);
         return Err(AppError::FeishuPushFailed(format!(
             "HTTP 错误: {}, 响应: {}",
             status, response_body
@@ -221,10 +222,7 @@ pub async fn send_feishu_notification(
         if let Some(code) = json.get("code").and_then(|c| c.as_i64()) {
             if code != 0 {
                 error!("飞书 API 返回错误: {}", json);
-                return Err(AppError::FeishuPushFailed(format!(
-                    "API 错误: {}",
-                    json
-                )));
+                return Err(AppError::FeishuPushFailed(format!("API 错误: {}", json)));
             }
         }
     }
@@ -281,7 +279,12 @@ mod tests {
             pass_rate: 0.8,
         };
 
-        let message = FeishuMessage::from_test_report("test-task-123", &summary, 120, Some("https://example.com/report"));
+        let message = FeishuMessage::from_test_report(
+            "test-task-123",
+            &summary,
+            120,
+            Some("https://example.com/report"),
+        );
 
         let json = serde_json::to_string_pretty(&message).unwrap();
         println!("{}", json);

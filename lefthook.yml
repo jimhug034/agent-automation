@@ -1,0 +1,34 @@
+# Git hooks 配置
+pre-commit:
+  parallel: true
+  commands:
+    fmt:
+      run: cargo fmt -- --check
+      fix_stdout: true
+    clippy:
+      run: cargo clippy -- -D warnings
+      fix_stdout: true
+
+pre-push:
+  parallel: true
+  commands:
+    test:
+      run: cargo test --quiet
+    build:
+      run: cargo build --release
+
+commit-msg:
+  commands:
+    conventional-commits:
+      run: 'echo "$1" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|chore|build|ci|revert)(\(.+\))?: .{10,}"'
+      error_message: |
+        提交信息格式错误！请使用 Conventional Commits 格式：
+        feat: 新功能
+        fix: 修复bug
+        docs: 文档更新
+        style: 代码格式
+        refactor: 重构
+        perf: 性能优化
+        test: 测试相关
+        chore: 构建/工具
+        示例: feat: 添加用户登录功能
