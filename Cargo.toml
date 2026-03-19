@@ -1,0 +1,53 @@
+[package]
+name = "agent-automation"
+version = "0.1.0"
+edition = "2021"
+description = "AI Agent 自动化测试 Electron 应用"
+authors = ["Agent Automation Team"]
+license = "MIT"
+
+[dependencies]
+# HTTP API
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "limit", "trace", "fs"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# 配置
+config = "0.14"
+toml = "0.8"
+
+# HTTP 客户端 (LLM API, 下载)
+reqwest = { version = "0.11", features = ["json", "stream"] }
+bytes = "1"
+futures-util = "0.3"
+
+# 模板引擎
+tera = "1.19"
+
+# 日志
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+
+# 时间处理
+chrono = { version = "0.4", features = ["serde"] }
+
+# 异步
+async-trait = "0.1"
+
+# 错误处理
+thiserror = "1"
+anyhow = "1"
+
+# UUID
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# 文件操作
+zip = "0.6"
+glob = "0.3"
+
+[dev-dependencies]
+tempfile = "3"

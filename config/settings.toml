@@ -1,0 +1,45 @@
+[server]
+host = "0.0.0.0"
+port = 8080
+workers = 4
+
+[task]
+workspace_dir = "./workspace"
+cdp_port = 9222
+default_timeout = 300
+default_retries = 2
+max_concurrent_tasks = 3
+
+[llm]
+default_model = "claude"
+timeout = 30
+max_retries = 3
+
+[llm.openai]
+api_base = "https://api.openai.com/v1"
+api_key = "${OPENAI_API_KEY}"
+model = "gpt-4o"
+
+[llm.claude]
+api_base = "https://api.anthropic.com/v1"
+api_key = "${ANTHROPIC_API_KEY}"
+model = "claude-3-5-sonnet-20241022"
+
+[agent_browser]
+bin_path = "agent-browser"
+snapshot_interval = 1000
+
+[report]
+output_dir = "./reports"
+html_template = "./templates/report.html"
+screenshot_format = "png"
+keep_screenshots = true
+
+[feishu]
+webhook_url = "${FEISHU_WEBHOOK}"
+enabled = true
+
+[logging]
+level = "info"
+dir = "./logs"
+max_files = 7

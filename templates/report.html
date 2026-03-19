@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Report - {{task_id}}</title>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--gray-100);
+            color: var(--gray-800);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .header .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            color: var(--gray-500);
+            font-size: 14px;
+        }
+
+        .header .meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-banner {
+            padding: 16px 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .status-banner.passed {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-banner.failed {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .summary-card .label {
+            font-size: 14px;
+            color: var(--gray-500);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .summary-card.total .value {
+            color: var(--primary-color);
+        }
+
+        .summary-card.passed .value {
+            color: var(--success-color);
+        }
+
+        .summary-card.failed .value {
+            color: var(--danger-color);
+        }
+
+        .summary-card.skipped .value {
+            color: var(--warning-color);
+        }
+
+        .summary-card.rate .value {
+            color: var(--gray-700);
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-item .label {
+            font-size: 13px;
+            color: var(--gray-500);
+            font-weight: 500;
+        }
+
+        .info-item .value {
+            font-size: 15px;
+            color: var(--gray-800);
+            font-weight: 500;
+        }
+
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .step {
+            border: 1px solid var(--gray-200);
+            border-radius: 10px;
+            padding: 16px;
+            background: var(--gray-50);
+            transition: all 0.2s ease;
+        }
+
+        .step:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .step.passed {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .step.failed {
+            border-left: 4px solid var(--danger-color);
+            background-color: #fef2f2;
+        }
+
+        .step.skipped {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .step.running {
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .step.pending {
+            border-left: 4px solid var(--gray-300);
+            opacity: 0.7;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .step-icon {
+            font-size: 20px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .step.passed .step-icon {
+            background-color: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .step.failed .step-icon {
+            background-color: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .step.skipped .step-icon {
+            background-color: #fef3c7;
+            color: var(--warning-color);
+        }
+
+        .step.running .step-icon {
+            background-color: #dbeafe;
+            color: var(--primary-color);
+        }
+
+        .step.pending .step-icon {
+            background-color: var(--gray-200);
+            color: var(--gray-500);
+        }
+
+        .step-number {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-500);
+            min-width: 32px;
+        }
+
+        .step-description {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--gray-800);
+        }
+
+        .step-action {
+            font-size: 13px;
+            color: var(--gray-500);
+            font-family: 'Monaco', 'Consolas', monospace;
+            background: var(--gray-100);
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.hardware {
+            background-color: #e0e7ff;
+            color: #4338ca;
+        }
+
+        .error-message {
+            margin-top: 12px;
+            padding: 12px;
+            background-color: #fee2e2;
+            border-radius: 8px;
+            color: #991b1b;
+            font-size: 14px;
+            border-left: 3px solid var(--danger-color);
+        }
+
+        .error-message strong {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--gray-500);
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--gray-200);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color) 0%, var(--success-color) var(--pass-rate), var(--danger-color) var(--pass-rate), var(--danger-color) 100%);
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .summary-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .step-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Test Report</h1>
+            <div class="meta">
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    Start: {{start_time}}
+                </span>
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Duration: {{duration_secs}}s
+                </span>
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                    </svg>
+                    Status: {{status}}
+                </span>
+            </div>
+        </div>
+
+        <!-- Status Banner -->
+        <div class="status-banner {{status_class}}">
+            <span>Test Result: {{status}}</span>
+            <span>{{pass_rate}}% Pass Rate</span>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card total">
+                <div class="label">Total Tests</div>
+                <div class="value">{{total}}</div>
+            </div>
+            <div class="summary-card passed">
+                <div class="label">Passed</div>
+                <div class="value">{{passed}}</div>
+            </div>
+            <div class="summary-card failed">
+                <div class="label">Failed</div>
+                <div class="value">{{failed}}</div>
+            </div>
+            <div class="summary-card skipped">
+                <div class="label">Skipped</div>
+                <div class="value">{{skipped}}</div>
+            </div>
+            <div class="summary-card rate">
+                <div class="label">Pass Rate</div>
+                <div class="value">{{pass_rate}}%</div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="section">
+            <div class="progress-bar">
+                <div class="fill" style="width: {{pass_rate}}%;"></div>
+            </div>
+        </div>
+
+        <!-- Test Information -->
+        <div class="section">
+            <h2 class="section-title">Test Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Task ID</span>
+                    <span class="value">{{task_id}}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Package URL</span>
+                    <span class="value">{{package_url}}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Start Time</span>
+                    <span class="value">{{start_time}}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">End Time</span>
+                    <span class="value">{{end_time}}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Steps -->
+        <div class="section">
+            <h2 class="section-title">Test Steps</h2>
+            {{steps_html}}
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Generated by Agent Automation Test Framework</p>
+            <p>{{end_time}}</p>
+        </div>
+    </div>
+</body>
+</html>
