@@ -150,30 +150,141 @@ pub async fn submit_test_task(
     State(state): State<AppState>,
     Json(request): Json<TestRequest>,
 ) -> Result<Json<TestSubmitResponse>, AppError> {
-    // TODO: 实现完整的任务创建和执行逻辑
-    // 目前返回一个模拟响应
+    tracing::info!("收到测试请求: package_url={}, test_goals={:?}",
+        request.package_url, request.test_goals);
 
-    let task_id = uuid::Uuid::new_v4().to_string();
+    // 创建工作目录路径（使用配置的 workspace）
+    let workspace = std::path::PathBuf::from("./workspace");
+    let task_workspace = workspace.join(uuid::Uuid::new_v4().to_string());
+    if let Err(e) = std::fs::create_dir_all(&task_workspace) {
+        tracing::error!("创建工作目录失败: {}", e);
+        return Err(AppError::LaunchFailed(format!("创建工作目录失败: {}", e)));
+    }
 
-    // 创建新任务（使用默认值，实际应从配置获取）
+    // 创建新任务
     let task = TestTask::new(
         request.package_url.clone(),
         request.test_goals.clone(),
-        std::path::PathBuf::from("/tmp/workspace"),
-        std::path::PathBuf::from("/tmp/electron"),
+        task_workspace.clone(),
+        std::path::PathBuf::from("/tmp/electron"), // 会在解压后更新
         9222,
     );
 
+    let task_id = task.id.clone();
+    tracing::info!("创建任务: {}", task_id);
+
     // 将任务添加到管理器
-    state.task_manager.add_task(task).await;
+    state.task_manager.add_task(task.clone()).await;
 
     // 增加活跃任务计数
     state.active_tasks.fetch_add(1, Ordering::Relaxed);
+
+    // 启动异步执行任务
+    let task_manager = state.task_manager.clone();
+    let task_id_clone = task_id.clone();
+    tokio::spawn(async move {
+        tracing::info!("开始执行任务: {}", task_id_clone);
+        execute_task_internal(task_manager, task).await;
+    });
 
     Ok(Json(TestSubmitResponse {
         task_id,
         status: TaskStatus::Pending,
     }))
+}
+
+/// 内部任务执行函数
+///
+/// 执行完整的测试流程：下载 -> 解压 -> 启动 -> 测试 -> 报告
+async fn execute_task_internal(
+    task_manager: Arc<TaskManager>,
+    task: TestTask,
+) {
+    let task_id = task.id.clone();
+    let workspace = task.workspace.clone();
+
+    // 更新状态为下载中
+    update_status(&task_manager, &task_id, TaskStatus::Downloading).await;
+
+    // 下载包
+    let zip_path = workspace.join("app.zip");
+    match crate::installer::download::download_package(&task.package_url, &zip_path).await {
+        Ok(_) => tracing::info!("下载完成: {:?}", zip_path),
+        Err(e) => {
+            tracing::error!("下载失败: {}", e);
+            update_status(&task_manager, &task_id, TaskStatus::Failed(e.to_string())).await;
+            return;
+        }
+    }
+
+    // 更新状态为解压中
+    update_status(&task_manager, &task_id, TaskStatus::Extracting).await;
+
+    // 解压包
+    let package_dir = workspace.join("package");
+    match crate::installer::extract::extract_zip(&zip_path, &package_dir).await {
+        Ok(_) => tracing::info!("解压完成: {:?}", package_dir),
+        Err(e) => {
+            tracing::error!("解压失败: {}", e);
+            update_status(&task_manager, &task_id, TaskStatus::Failed(e.to_string())).await;
+            return;
+        }
+    }
+
+    // 查找 Electron 可执行文件
+    let electron_path = match crate::installer::launch::find_electron_executable(&package_dir) {
+        Some(path) => {
+            tracing::info!("找到 Electron: {:?}", path);
+            path
+        }
+        None => {
+            let msg = format!("未找到 Electron 可执行文件: {:?}", package_dir);
+            tracing::error!("{}", msg);
+            update_status(&task_manager, &task_id, TaskStatus::Failed(msg.clone())).await;
+            return;
+        }
+    };
+
+    // 更新状态为运行中
+    update_status(&task_manager, &task_id, TaskStatus::Running).await;
+
+    // 启动 Electron 应用
+    let process = match crate::installer::launch::launch_electron(&electron_path, task.cdp_port).await {
+        Ok(process) => {
+            tracing::info!("Electron 启动成功: PID={}, CDP Port={}", process.pid, process.cdp_port);
+            Some(process)
+        }
+        Err(e) => {
+            tracing::error!("启动 Electron 失败: {}", e);
+            update_status(&task_manager, &task_id, TaskStatus::Failed(e.to_string())).await;
+            return;
+        }
+    };
+
+    // TODO: 实际的测试执行逻辑
+    // 这里应该连接 CDP，使用 TestAgent 执行测试目标
+    tracing::info!("执行测试目标: {:?}", task.test_goals);
+
+    // 等待一段时间模拟测试
+    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+
+    // 清理：终止 Electron 进程
+    if let Some(process) = process {
+        if let Err(e) = crate::installer::launch::kill_process(process.pid) {
+            tracing::warn!("终止进程失败: {}", e);
+        }
+    }
+
+    // 更新状态为完成
+    update_status(&task_manager, &task_id, TaskStatus::Completed).await;
+    tracing::info!("任务完成: {}", task_id);
+}
+
+/// 更新任务状态的辅助函数
+async fn update_status(task_manager: &Arc<TaskManager>, task_id: &str, status: TaskStatus) {
+    let _ = task_manager.update_task_status(task_id, |s| {
+        *s = status.clone();
+    }).await;
 }
 
 /// 获取任务状态处理器

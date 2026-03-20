@@ -26,44 +26,13 @@ pub async fn extract_zip(zip_path: &Path, destination: &Path) -> Result<(), AppE
     fs::create_dir_all(destination).await?;
     tracing::debug!("创建目标目录: {:?}", destination);
 
-    // 读取 ZIP 文件
-    let file_bytes = fs::read(zip_path).await?;
-    tracing::debug!("读取 ZIP 文件: {} bytes", file_bytes.len());
-
-    // 创建 ZIP 归档
-    let mut archive = ZipArchive::new(std::io::Cursor::new(file_bytes))?;
-
-    let file_count = archive.len();
-    tracing::info!("ZIP 文件包含 {} 个文件", file_count);
-
-    // 解压所有文件
-    for i in 0..file_count {
-        let mut file = archive.by_index(i)?;
-        let file_path = destination.join(file.name());
-
-        // 跳过目录（已在创建目录时处理）
-        if file.name().ends_with('/') {
-            fs::create_dir_all(&file_path).await?;
-            continue;
-        }
-
-        // 创建父目录
-        if let Some(parent) = file_path.parent() {
-            fs::create_dir_all(parent).await?;
-        }
-
-        // 使用缓冲区复制文件内容
-        let mut buffer = Vec::with_capacity(file.size() as usize);
-        std::io::copy(&mut file, &mut buffer)?;
-
-        // 直接写入文件（比先创建再写入更高效）
-        fs::write(&file_path, buffer).await?;
-
-        tracing::debug!("解压文件: {} ({} bytes)", file.name(), file.size());
-    }
-
-    tracing::info!("解压完成: {:?} (共 {} 个文件)", destination, file_count);
-    Ok(())
+    // 在 spawn_blocking 中执行解压，因为 ZipArchive 不是 Send
+    let zip_path = zip_path.to_path_buf();
+    let destination = destination.to_path_buf();
+    tokio::task::spawn_blocking(move || {
+        extract_zip_sync(&zip_path, &destination)
+    }).await
+    .map_err(|e| AppError::ExtractFailed(format!("spawn_blocking 错误: {}", e)))?
 }
 
 /// 解压 ZIP 文件到目标目录（同步版本，用于某些特殊场景）
@@ -119,6 +88,44 @@ pub fn extract_zip_sync(zip_path: &Path, destination: &Path) -> Result<(), AppEr
     }
 
     tracing::info!("解压完成: {:?} (共 {} 个文件)", destination, file_count);
+
+    // 检查是否有嵌套的 .zip 文件（常见于更新包）
+    // 只处理第一层嵌套，避免无限循环
+    let nested_zips: Vec<_> = std::fs::read_dir(destination)?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| {
+            // 只处理不以 .temp_ 开头的 zip 文件
+            entry.path().extension().map(|e| e == "zip").unwrap_or(false) &&
+            !entry.file_name().to_string_lossy().starts_with(".temp_")
+        })
+        .map(|entry| entry.path())
+        .collect();
+
+    if !nested_zips.is_empty() {
+        tracing::info!("发现 {} 个嵌套 ZIP 文件，继续解压...", nested_zips.len());
+        for nested_zip in &nested_zips {
+            tracing::info!("解压嵌套 ZIP: {:?}", nested_zip);
+
+            // 先将 zip 移动到临时位置，避免解压后检测到自己
+            let temp_zip = destination.join(format!(".temp_{}.zip",
+                nested_zip.file_stem().and_then(|s| s.to_str()).unwrap_or("nested")
+            ));
+            std::fs::rename(nested_zip, &temp_zip)?;
+
+            // 解压到目标目录
+            let result = extract_zip_sync(&temp_zip, destination);
+
+            // 删除临时 zip
+            let _ = std::fs::remove_file(&temp_zip);
+
+            if let Err(e) = result {
+                tracing::warn!("解压嵌套 ZIP 失败: {}", e);
+            } else {
+                tracing::debug!("已解压并删除嵌套 ZIP");
+            }
+        }
+    }
+
     Ok(())
 }
 
