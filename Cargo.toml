@@ -18,6 +18,7 @@ serde_json = "1"
 # 配置
 config = "0.14"
 toml = "0.8"
+dotenv = "0.15"
 
 # HTTP 客户端 (LLM API, 下载)
 reqwest = { version = "0.11", features = ["json", "stream"] }

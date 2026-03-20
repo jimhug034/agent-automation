@@ -81,22 +81,29 @@ pub struct LoggingSettings {
 
 impl Settings {
     pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
-        let mut settings = Config::builder()
-            .add_source(File::with_name("config/settings"))
-            .add_source(Environment::default().separator("__"))
-            .build()?;
+        // 收集环境变量覆盖
+        let mut overrides = std::collections::HashMap::new();
 
-        // 展开环境变量
         if let Ok(api_key) = std::env::var("OPENAI_API_KEY") {
-            settings.set("llm.openai.api_key", api_key)?;
+            overrides.insert("llm.openai.api_key", api_key);
         }
         if let Ok(api_key) = std::env::var("ANTHROPIC_API_KEY") {
-            settings.set("llm.claude.api_key", api_key)?;
+            overrides.insert("llm.claude.api_key", api_key);
         }
         if let Ok(webhook) = std::env::var("FEISHU_WEBHOOK") {
-            settings.set("feishu.webhook_url", webhook)?;
+            overrides.insert("feishu.webhook_url", webhook);
         }
 
+        let mut builder = Config::builder()
+            .add_source(File::with_name("config/settings"))
+            .add_source(Environment::default().separator("__"));
+
+        // 应用环境变量覆盖
+        for (key, value) in overrides {
+            builder = builder.set_override(key, value)?;
+        }
+
+        let settings = builder.build()?;
         Ok(settings.try_deserialize()?)
     }
 

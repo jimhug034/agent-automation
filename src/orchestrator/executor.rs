@@ -78,6 +78,7 @@ impl TaskExecutor {
 
         // 记录开始时间
         let start_time = Utc::now();
+        #[allow(unused_assignments)]
         let mut electron_pid: Option<u32> = None;
 
         // 准备工作目录

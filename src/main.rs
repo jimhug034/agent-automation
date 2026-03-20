@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod api;
 mod config;
 mod engine;
@@ -14,6 +16,9 @@ use config::Settings;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 加载 .env 文件（优先级：.env.local > .env）
+    dotenv::dotenv().ok();
+
     // 加载配置
     let settings = Settings::load()?;
 

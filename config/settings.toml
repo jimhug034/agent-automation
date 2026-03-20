@@ -16,14 +16,14 @@ timeout = 30
 max_retries = 3
 
 [llm.openai]
-api_base = "https://api.openai.com/v1"
+api_base = "https://ai-gateway.makeblock.com"
 api_key = "${OPENAI_API_KEY}"
-model = "gpt-4o"
+model = "gpt-4.1"  # 使用最新版本
 
 [llm.claude]
-api_base = "https://api.anthropic.com/v1"
+api_base = "https://ai-gateway.makeblock.com"
 api_key = "${ANTHROPIC_API_KEY}"
-model = "claude-3-5-sonnet-20241022"
+model = "claude-sonnet-4-20250514"  # 或 claude-opus-4-6
 
 [agent_browser]
 bin_path = "agent-browser"
